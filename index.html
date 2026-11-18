@@ -96,6 +96,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:46px;padding:0 16px;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:700 15px/1 var(--body);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.fld{display:flex;flex-direction:column;gap:8px}
+.fld span{font-weight:800}
+.fld select{min-height:54px;padding:0 14px;border-radius:16px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:700 16px/1.2 var(--body);width:100%}
 
 /* Pregunta */
 .qcard{background:var(--surface);border-radius:26px;padding:24px;display:flex;flex-direction:column;gap:16px}
@@ -131,6 +134,10 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(-
 .rrow .bar{grid-column:2 / 4;height:10px;border-radius:5px;background:var(--tint);overflow:hidden}
 .rrow .bar i{display:block;height:100%;border-radius:5px;background:var(--muted)}
 .rrow.first .bar i{background:var(--ink)}
+.rrow .nm em{display:block;font-style:normal;font-weight:600;font-size:13px;line-height:1.3;color:var(--muted)}
+.rrow.away{opacity:.55}
+.sep{font-weight:800;font-size:14px;color:var(--muted);margin:6px 0 0}
+.winner .why{font-size:15px;line-height:1.35;color:var(--on-hero-muted)}
 .rrow.mine .bar i{background:repeating-linear-gradient(135deg,var(--ink) 0 4px,var(--muted) 4px 8px)}
 .mirror{background:var(--surface);border:3px solid var(--ink);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:10px}
 .mirror h3{font-size:22px}
@@ -242,6 +249,31 @@ const PARTIES = [
   ["bildu","EH Bildu"],["pnv","PNV"],["podemos","Podemos"],["bng","BNG"],["compromis","Compromís"],
   ["cc","Coalición Canaria"],["upn","UPN"]
 ];
+// Dónde tiene papeleta cada grupo el 29-N (Congreso). Fuente: candidaturas proclamadas,
+// BOE-A-2026-23103 (3 nov 2026) y su corrección de errores, BOE-A-2026-23383 (7 nov 2026).
+// true = papeleta con su propio nombre; texto = nombre de la candidatura en la que va.
+const PROVS = ["A Coruña","Álava","Albacete","Alicante","Almería","Asturias","Ávila","Badajoz","Barcelona","Bizkaia","Burgos","Cáceres","Cádiz","Cantabria","Castellón","Ceuta","Ciudad Real","Córdoba","Cuenca","Gipuzkoa","Girona","Granada","Guadalajara","Huelva","Huesca","Illes Balears","Jaén","La Rioja","Las Palmas","León","Lleida","Lugo","Madrid","Málaga","Melilla","Murcia","Navarra","Ourense","Palencia","Pontevedra","Salamanca","Santa Cruz de Tenerife","Segovia","Sevilla","Soria","Tarragona","Teruel","Toledo","Valencia","Valladolid","Zamora","Zaragoza"];
+const T_CAT = ["Barcelona","Girona","Lleida","Tarragona"], T_PV = ["Álava","Bizkaia","Gipuzkoa"],
+      T_GAL = ["A Coruña","Lugo","Ourense","Pontevedra"], T_VAL = ["Alicante","Castellón","Valencia"],
+      T_CAN = ["Las Palmas","Santa Cruz de Tenerife"];
+function ballots(p){
+  const b = {psoe:true, pp:true, vox:true, sumar:"Frente Amplio", podemos:true};
+  if (T_CAT.includes(p)) { b.psoe = "PSC"; b.sumar = "Comuns-Front Ampli"; b.erc = true; b.junts = true; delete b.podemos; }
+  if (T_PV.includes(p)) { b.bildu = true; b.pnv = true; }
+  if (p === "Álava") b.sumar = "Frente Amplio-Fronte Zabala";
+  if (p === "Navarra") { b.bildu = true; b.pp = b.upn = "UPN-PP"; b.sumar = "Frente Amplio-Fronte Zabala"; }
+  if (T_GAL.includes(p)) { b.bng = true; b.sumar = "Frente Amplio-Fronte Ampla"; }
+  if (T_VAL.includes(p)) b.compromis = b.sumar = b.podemos = b.erc = "Compromís: Front Valencià";
+  if (T_CAN.includes(p)) { b.sumar = b.podemos = "Unidad del Pueblo Canario"; b.cc = p === "Las Palmas" ? "Municipalistas Primero Canarias-Coalición Canaria" : "Coalición Canaria-Municipalistas Primero Canarias"; }
+  if (p === "Illes Balears") { b.sumar = "Aramés-Front Ampli"; delete b.podemos; }
+  if (p === "Asturias") b.sumar = "Frente Ampliu por Asturies";
+  if (["Cádiz","Córdoba","Granada","Huelva","Sevilla"].includes(p)) b.sumar = "Frente Amplio Andaluz";
+  if (["Huesca","Zaragoza"].includes(p)) b.sumar = "Chunta Aragonesista-Frente Amplio Aragón";
+  if (["Teruel","Ceuta","Melilla"].includes(p)) delete b.sumar;
+  if (p === "Melilla") delete b.podemos;
+  return b;
+}
+const local = () => (st.prov && st.prov !== "*") ? ballots(st.prov) : null;
 const TOPICS = {
   viv:{name:"Vivienda", ico:"home", tint:"--tint"},
   tra:{name:"Trabajo", ico:"clock", tint:"--tint"},
@@ -451,12 +483,12 @@ const ICONS = {
 const svg = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const WORD = {S:"A favor", N:"En contra", A:"Abstención", "?":"Sin dato"};
-const PICK = PARTIES.map(p => p[1]).concat(["Otro", "Aún no lo sé"]);
+const pickList = () => { const b = local(); return PARTIES.filter(p => !b || b[p[0]]).map(p => p[1]).concat(["Otro", "Aún no lo sé"]); };
 const TAG = {S:["S","Sí"], N:["N","No"], A:["A","Abs."]};
 const tag = v => `<span class="tag ${TAG[v][0]}">${TAG[v][1]}</span>`;
 const shuffle = a => { a = a.slice(); for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; };
 
-const st = {screen:"home", mine:null, round:[], i:0, asked:[], ans:{}, imp:{}, more:false, rounds:0};
+const st = {screen:"home", prov:null, mine:null, round:[], i:0, asked:[], ans:{}, imp:{}, more:false, rounds:0};
 const app = document.getElementById("app");
 
 // Una pregunta por tema que aún no haya salido, en orden de temas aleatorio
@@ -504,10 +536,20 @@ function home(){
 function pick(){
   return `
   <div class="top"><button class="back" data-go="home" aria-label="Volver">${svg("back")}</button></div>
-  <h1 style="font-size:30px">Antes de empezar, ¿a quién piensas votar?</h1>
-  <p class="muted">No se guarda ni se envía a nadie. Sirve para que al final compares tu idea con lo que ese partido votó.</p>
-  <div class="chips" role="group" aria-label="Partido">${PICK.map((n,k)=>`<button class="chip" data-pick="${k}" aria-pressed="${st.mine===n}">${esc(n)}</button>`).join("")}</div>
-  <div class="bottom"><button class="cta" data-start ${st.mine ? "" : "disabled"}>Ir a la primera pregunta</button></div>`;
+  <h1 style="font-size:30px">Antes de empezar</h1>
+  <label class="fld"><span>¿En qué provincia votas?</span>
+    <select id="prov">
+      <option value="">Elige tu provincia</option>
+      ${PROVS.map(p => `<option${st.prov === p ? " selected" : ""}>${esc(p)}</option>`).join("")}
+      <option value="*"${st.prov === "*" ? " selected" : ""}>Prefiero no decirlo</option>
+    </select>
+  </label>
+  <p class="muted small">Sirve para compararte solo con los partidos que tienen papeleta donde votas. No se guarda ni se envía.</p>
+  ${st.prov ? `
+  <h2 style="font-size:24px">¿A quién piensas votar?</h2>
+  <p class="muted">Tampoco se guarda. Sirve para que al final compares tu idea con lo que ese partido votó.</p>
+  <div class="chips" role="group" aria-label="Partido">${pickList().map(n => `<button class="chip" data-pick="${esc(n)}" aria-pressed="${st.mine===n}">${esc(n)}</button>`).join("")}</div>` : ""}
+  <div class="bottom"><button class="cta" data-start ${st.prov && st.mine ? "" : "disabled"}>Ir a la primera pregunta</button></div>`;
 }
 
 function quiz(){
@@ -534,6 +576,7 @@ function quiz(){
 }
 
 function score(){
+  const b = local();
   return PARTIES.map(([k, name], p) => {
     let got = 0, max = 0, same = 0, n = 0; const diff = [];
     st.asked.forEach(id => {
@@ -543,9 +586,19 @@ function score(){
       got += (pv === a ? 1 : pv === "A" ? .5 : 0) * w; max += w; n++;
       if (pv === a) same++; else diff.push({q, pv, a});
     });
-    return {name, pct: max ? Math.round(100 * got / max) : 0, diff, same, n};
-  }).sort((a, b) => b.pct - a.pct);
+    const bal = b ? b[k] : true;
+    return {key:k, name, pct: max ? Math.round(100 * got / max) : 0, got, max, diff, same, n,
+            here: !!bal, ballot: typeof bal === "string" ? bal : null};
+  }).sort((x, y) => (y.here - x.here) || (y.pct - x.pct));   // primero, los que tienen papeleta donde votas
 }
+// Empate técnico: partidos con papeleta a los que separa del primero una respuesta o menos
+function tied(r){
+  const top = r[0];
+  if (!top.max) return [top];
+  return r.filter(x => x.here && x.max && (top.got / top.max - x.got / x.max) <= 1 / top.max + 1e-9);
+}
+const where = () => st.prov && st.prov !== "*" ? st.prov : null;
+const note = x => x.ballot ? `<em>Va en la papeleta «${esc(x.ballot)}»</em>` : "";
 
 function result(){
   const answered = st.asked.filter(id => st.ans[id] === "S" || st.ans[id] === "N").length;
@@ -554,12 +607,19 @@ function result(){
     <p class="muted">Has marcado «No lo tengo claro» en todas. Prueba a responder alguna.</p>
     <div class="bottom"><button class="cta" data-restart>Volver a empezar</button></div>`;
   const r = score(), top = r[0], m = r.find(x => x.name === st.mine);
-  const ties = r.filter(x => x.pct === top.pct).map(x => x.name);
+  const inn = r.filter(x => x.here), out = r.filter(x => !x.here), pv = where();
+  const tie = tied(r), ties = tie.map(x => x.name), low = tie[tie.length - 1].pct;
+  const names = ties.length > 4 ? ties.slice(0, 3).join(" · ") + ` y ${ties.length - 3} más` : ties.join(" · ");
+  const row = (x, k, cls) => `
+      <div class="rrow${cls || ""}${x.name===st.mine?" mine":""}">
+        <span class="n">${k}</span><span class="nm">${esc(x.name)}${x.name===st.mine?"<small>tu elección</small>":""}${note(x)}</span><span class="pc">${x.pct}%</span>
+        <div class="bar" role="img" aria-label="${esc(x.name)}: ${x.pct}%"><i style="width:${x.pct}%"></i></div>
+      </div>`;
   let mirror = "";
   if (m) {
     const pos = r.indexOf(m) + 1;
     mirror = `<div class="mirror"><h3>Pensabas votar a ${esc(m.name)}</h3>
-      <p>Coincides un <b>${m.pct}%</b> y queda en el puesto <b>${pos} de ${r.length}</b>.</p>
+      <p>Coincides un <b>${m.pct}%</b> y queda en el puesto <b>${pos} de ${inn.length}</b>${pv ? ` entre los que se presentan en ${esc(pv)}` : ""}.</p>
       ${m.diff.length ? `<p>Votó distinto a ti en ${m.diff.length} ${m.diff.length===1?"tema":"temas"}:</p>
       <table class="cmp"><thead><tr><th scope="col">Pregunta</th><th scope="col">Tú</th><th scope="col">${esc(m.name)}</th></tr></thead>
       <tbody>${m.diff.map(d=>`<tr><td>${esc(d.q.short)}</td><td>${tag(d.a)}</td><td>${tag(d.pv)}</td></tr>`).join("")}</tbody></table>` : `<p>Votó como tú en todo lo que respondiste.</p>`}</div>`;
@@ -570,9 +630,10 @@ function result(){
     ? `<div class="card refine"><h3>¿Quieres un resultado más fiable?</h3><p class="small muted">Responde ${Math.min(15, TKEYS.filter(t => BANK.some(q => q.t === t && !st.asked.includes(q.id))).length)} votaciones más, una por tema, distintas a las de antes. Se suman a las que ya has respondido.</p><button class="cta" data-refine>Afina tu resultado</button></div>` : "";
   return `
   <div class="winner">
-    <span class="lbl">${ties.length > 1 ? "Empate en cabeza" : "Coincides más con"}</span>
-    <span class="pname${ties.length > 2 ? " many" : ""}">${esc(ties.join(" · "))}</span>
-    <span class="pp">${top.pct}% de afinidad</span>
+    <span class="lbl">${ties.length > 1 ? "Empate técnico entre" : "Coincides más con"}</span>
+    <span class="pname${ties.length > 1 ? " many" : ""}">${esc(names)}</span>
+    <span class="pp">${ties.length > 1 && low !== top.pct ? `Entre el ${low}% y el ${top.pct}% de afinidad` : `${top.pct}% de afinidad`}</span>
+    ${ties.length > 1 ? `<span class="why">Les separa una respuesta o menos: con estas preguntas no se puede decir cuál va primero. Responde más para afinar.</span>` : `${top.ballot ? `<span class="why">En ${esc(pv)} va en la papeleta «${esc(top.ballot)}».</span>` : ""}${inn.length > 2 ? `<span class="why">Le siguen ${esc(inn[1].name)} (${inn[1].pct}%) y ${esc(inn[2].name)} (${inn[2].pct}%).</span>` : ""}`}
   </div>
   ${mirror}
   <div class="card share">
@@ -583,12 +644,11 @@ function result(){
     <p class="small muted" id="sharemsg" role="status" aria-live="polite"></p>
   </div>
   <div class="card">
-    <h3>Todos los partidos</h3>
-    <div class="rank">${r.map((x,k)=>`
-      <div class="rrow${x.pct===top.pct?" first":""}${x.name===st.mine?" mine":""}">
-        <span class="n">${k+1}</span><span class="nm">${esc(x.name)}${x.name===st.mine?"<small>tu elección</small>":""}</span><span class="pc">${x.pct}%</span>
-        <div class="bar" role="img" aria-label="${esc(x.name)}: ${x.pct}%"><i style="width:${x.pct}%"></i></div>
-      </div>`).join("")}</div>
+    <h3>${pv ? `Partidos con papeleta en ${esc(pv)}` : "Todos los partidos"}</h3>
+    <div class="rank">${inn.map((x,k)=>row(x, k+1, tie.includes(x) ? " first" : "")).join("")}</div>
+    ${out.length ? `<p class="sep">Sin papeleta en ${esc(pv)}</p>
+    <div class="rank">${out.map(x=>row(x, "–", " away")).join("")}</div>` : ""}
+    ${pv ? "" : `<p class="small muted">No has indicado provincia: salen los 13 partidos, aunque varios solo se presentan en su territorio.</p>`}
     <p class="small muted">Basado en tus ${answered} respuestas a favor o en contra. <button class="link small" data-calc>¿Cómo se calcula?</button></p>
   </div>
   ${refine}
@@ -617,7 +677,7 @@ function detail(){
       ${groups}
       <p class="meta">Propuesta de ${esc(q.by)} · ${q.date} · ${q.result} · <a href="${q.url}" target="_blank" rel="noopener">Acta oficial</a></p>
     </div>`;}).join("")}
-  <p class="small muted">PSOE incluye al PSC. Sumar es una coalición (Más Madrid, IU, Comuns, Chunta y otros). «Sin dato» significa que la fuente no lo detalla, que el partido se dividió o que no votó; no cuenta en su porcentaje.</p>
+  <p class="small muted">PSOE incluye al PSC. Sumar es una coalición (Más Madrid, IU, Comuns, Chunta y otros); el 29-N sus formaciones van en las candidaturas de Frente Amplio y en coaliciones territoriales. «Sin dato» significa que la fuente no lo detalla, que el partido se dividió o que no votó; no cuenta en su porcentaje.</p>
   <div class="bottom"><button class="cta" data-go="result">Volver a mi resultado</button></div>`;
 }
 
@@ -657,7 +717,7 @@ function info(){
     <span class="eyebrow dark">El test</span>
     <h2>Cuatro pasos</h2>
     <ol class="steps">
-      ${step("ballot","Elige","a quién piensas votar. No se guarda.")}
+      ${step("ballot","Elige","dónde votas y a quién piensas votar. No se guarda.")}
       ${step("skip","Responde","15 preguntas, una por tema, sacadas al azar. Sin saber qué votó nadie.")}
       ${step("chart","Compara","con quién coincides y en qué temas tu partido votó distinto a ti.")}
       ${step("target","Afina","con más rondas de preguntas nuevas, si quieres un resultado más fiable.", true)}
@@ -673,6 +733,7 @@ function info(){
       <div class="sc s3"><b class="num">0</b><span>si votó lo contrario</span></div>
     </div>
     <p class="x2"><b class="num">×2</b><span>en los temas que marques como «me importa mucho». Tu porcentaje es lo que suma cada partido sobre el máximo posible.</span></p>
+    <p class="small muted">Si a dos o más partidos les separa una respuesta o menos, el resultado es un <b>empate técnico</b>: con esas preguntas no se puede decir cuál va primero. Solo se ordenan los partidos que tienen papeleta en tu provincia; el resto aparece aparte.</p>
   </section>
 
   <section class="isec">
@@ -694,6 +755,10 @@ function info(){
         <li>Desde 2015 no pueden recibir donaciones de empresas. Una persona puede donar hasta 50.000 € al año, nunca de forma anónima.</li>
         <li>El <a href="https://www.tcu.es" target="_blank" rel="noopener">Tribunal de Cuentas</a> revisa sus cuentas.</li>
       </ul>
+    </details>
+    <details class="acc">
+      <summary>¿Por qué me pregunta la provincia?</summary>
+      <p>Porque no todos los partidos se presentan en todas partes, y no tiene sentido decirte que coincides con uno al que no puedes votar. Varios van además en coalición: en ese caso te decimos en qué papeleta están. Los datos salen de las candidaturas proclamadas publicadas en el <a href="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-23103" target="_blank" rel="noopener">BOE del 3 de noviembre de 2026</a> y de su <a href="https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-23383" target="_blank" rel="noopener">corrección de errores</a>. El test compara los votos de cada grupo en el Congreso durante la legislatura; una coalición puede reunir a partidos que votaron distinto.</p>
     </details>
     <details class="acc">
       <summary>¿Por qué no salen todos los partidos del Senado?</summary>
@@ -736,7 +801,8 @@ function finishRound(){
 }
 function bind(){
   app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
-  app.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => { st.mine = PICK[+b.dataset.pick]; render(); });
+  app.querySelectorAll("[data-pick]").forEach(b => b.onclick = () => { st.mine = b.dataset.pick; render(); });
+  const pv = app.querySelector("#prov"); if (pv) pv.onchange = e => { st.prov = e.target.value || null; if (st.mine && !pickList().includes(st.mine)) st.mine = null; render(); };
   const s = app.querySelector("[data-start]"); if (s) s.onclick = () => { newRound(); go("quiz"); };
   const p = app.querySelector("[data-prev]"); if (p) p.onclick = () => {
     st.more = false;

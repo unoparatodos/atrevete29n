@@ -1,5 +1,5 @@
 // Guarda la app en el móvil para que funcione aunque no haya conexión. No guarda respuestas del test.
-const CACHE = "atrevete-v11";
+const CACHE = "atrevete-v12";
 const FILES = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/fonts/archivo.woff", "/fonts/publicsans.woff"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });

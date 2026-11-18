@@ -9,6 +9,8 @@ Publicada por [unoparatodos](https://unoparatodos.netlify.app/): gratis, sin anu
 - Primero eliges a quién piensas votar; después respondes a 15 preguntas (Sí / No / Abstención, con opción de marcar "me importa mucho").
 - Cada pregunta corresponde a una votación real del Pleno. El voto de cada grupo se codifica como una cadena de 13 caracteres en este orden: `psoe pp vox sumar erc junts bildu pnv podemos bng compromis cc upn`, con `S` (sí), `N` (no), `A` (abstención) y `?` (sin dato fiable o grupo dividido).
 - Puntuación: mismo voto = 1, abstención = 0,5, voto contrario = 0; ×2 si marcaste "me importa mucho". Una `?` excluye esa pregunta para ese partido.
+- Antes de empezar se pregunta la provincia: solo se ordenan los partidos con papeleta allí, según las candidaturas proclamadas (BOE-A-2026-23103, de 3 de noviembre de 2026, y su corrección de errores BOE-A-2026-23383). Si un grupo va en coalición, se indica el nombre de la papeleta. El resto de partidos se muestra aparte.
+- Si a dos o más partidos les separa una respuesta o menos, el resultado se presenta como **empate técnico**.
 - La tabla de votos de los partidos no se muestra hasta terminar el test, para no condicionar las respuestas.
 - Las respuestas no se guardan ni se envían: todo ocurre en tu dispositivo. Al compartir, la imagen dice **cuánto** coincides con el partido que pensabas votar, nunca **cuál**.
 
